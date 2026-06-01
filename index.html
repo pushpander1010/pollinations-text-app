@@ -47,6 +47,11 @@
     font-weight: 700;
   }
   .logo span { color: var(--accent); }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
   .badge {
     background: var(--surface2);
     padding: 4px 10px;
@@ -55,6 +60,20 @@
     color: var(--text-dim);
     border: 1px solid var(--border);
   }
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .user-info img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+  }
+  .user-info a { color: var(--accent); text-decoration: none; }
+  .user-info a:hover { text-decoration: underline; }
   main {
     flex: 1;
     max-width: 800px;
@@ -104,9 +123,7 @@
   select:focus, input[type="text"]:focus {
     border-color: var(--accent);
   }
-  .prompt-area {
-    position: relative;
-  }
+  .prompt-area { position: relative; }
   .prompt-area textarea {
     width: 100%;
     min-height: 140px;
@@ -157,6 +174,21 @@
     transition: all 0.2s;
   }
   button.secondary:hover { border-color: var(--accent); color: var(--text); }
+  button.login-btn {
+    background: linear-gradient(135deg, #2ea043, #238636);
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  button.login-btn:hover { opacity: 0.9; transform: translateY(-1px); }
   .spinner {
     width: 18px; height: 18px;
     border: 2px solid rgba(255,255,255,0.3);
@@ -179,11 +211,6 @@
     display: none;
   }
   .output-box.visible { display: block; }
-  .output-box .placeholder {
-    color: var(--text-dim);
-    opacity: 0.5;
-    font-style: italic;
-  }
   .output-meta {
     display: flex;
     justify-content: space-between;
@@ -216,9 +243,16 @@
     display: none;
   }
   .error-box.visible { display: block; }
-  .history-section {
-    margin-top: 20px;
+  .auth-prompt {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    text-align: center;
   }
+  .auth-prompt h3 { margin-bottom: 8px; font-size: 18px; }
+  .auth-prompt p { color: var(--text-dim); margin-bottom: 20px; font-size: 14px; }
+  .history-section { margin-top: 20px; }
   .history-section h3 {
     font-size: 14px;
     color: var(--text-dim);
@@ -237,7 +271,7 @@
     transition: border-color 0.2s;
   }
   .history-item:hover { border-color: var(--accent); }
-  .history-item .prompt { font-size: 14px; margin-bottom: 4px; color: var(--text); }
+  .history-item .prompt { font-size: 14px; margin-bottom: 4px; }
   .history-item .response-preview {
     font-size: 13px;
     color: var(--text-dim);
@@ -262,7 +296,10 @@
 
 <header>
   <div class="logo">✨ <span>Pollinations</span> Text</div>
-  <div class="badge">AI Text Generator</div>
+  <div class="header-right">
+    <div class="user-info" id="userInfo"></div>
+    <div class="badge">BYOP Enabled</div>
+  </div>
 </header>
 
 <main>
@@ -271,67 +308,150 @@
     <p>Generate stories, articles, code, and more — powered by Pollinations.ai</p>
   </div>
 
-  <div class="settings-row">
-    <div class="setting-group">
-      <label>Model</label>
-      <select id="modelSelect">
-        <option value="openai">GPT-4o Mini (OpenAI)</option>
-        <option value="openai-large">GPT-4o (OpenAI Large)</option>
-        <option value="mistral">Mistral Small</option>
-        <option value="command-r">Command R (Cohere)</option>
-        <option value="gemma">Gemma 2 (Google)</option>
-        <option value="llama-3.3-70b">Llama 3.3 70B</option>
-        <option value="phi-4">Phi-4 (Microsoft)</option>
-        <option value="deepseek-v3">DeepSeek V3</option>
-        <option value="qwen-2.5-coder-32b">Qwen 2.5 Coder 32B</option>
-      </select>
-    </div>
-    <div class="setting-group">
-      <label>System Prompt (optional)</label>
-      <input type="text" id="systemPrompt" placeholder="e.g. You are a helpful assistant" />
-    </div>
-  </div>
-
-  <div class="prompt-area">
-    <textarea id="promptInput" placeholder="What do you want to write?&#10;&#10;Examples:&#10;• Write a short story about a robot who discovers emotions&#10;• Explain quantum computing in simple terms&#10;• Write a professional email declining a meeting&#10;• Create a Python function to sort a linked list"></textarea>
-  </div>
-
-  <div class="actions">
-    <button class="primary" id="generateBtn" onclick="generate()">
-      <div class="spinner" id="spinner"></div>
-      <span id="btnText">Generate</span>
+  <!-- Auth prompt shown when not logged in -->
+  <div class="auth-prompt" id="authPrompt">
+    <h3>🔑 Sign in with GitHub</h3>
+    <p>Use your own Pollinations credits. Earn rewards when others use the app.</p>
+    <button class="login-btn" onclick="loginWithPollinations()">
+      <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      Continue with GitHub
     </button>
-    <button class="secondary" onclick="clearAll()">Clear</button>
   </div>
 
-  <div class="error-box" id="errorBox"></div>
-
-  <div class="output-box" id="outputBox">
-    <div id="outputText"></div>
-    <div class="output-meta" id="outputMeta" style="display:none;">
-      <span id="outputStats"></span>
-      <button class="copy-btn" onclick="copyOutput()">📋 Copy</button>
+  <!-- Main content (hidden until auth) -->
+  <div id="mainContent" style="display:none;">
+    <div class="settings-row">
+      <div class="setting-group">
+        <label>Model</label>
+        <select id="modelSelect">
+          <option value="openai">GPT-4o Mini (OpenAI)</option>
+          <option value="openai-large">GPT-4o (OpenAI Large)</option>
+          <option value="mistral">Mistral Small</option>
+          <option value="command-r">Command R (Cohere)</option>
+          <option value="gemma">Gemma 2 (Google)</option>
+          <option value="llama-3.3-70b">Llama 3.3 70B</option>
+          <option value="phi-4">Phi-4 (Microsoft)</option>
+          <option value="deepseek-v3">DeepSeek V3</option>
+          <option value="qwen-2.5-coder-32b">Qwen 2.5 Coder 32B</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <label>System Prompt (optional)</label>
+        <input type="text" id="systemPrompt" placeholder="e.g. You are a helpful assistant" />
+      </div>
     </div>
-  </div>
 
-  <div class="history-section" id="historySection" style="display:none;">
-    <h3>Recent Generations</h3>
-    <div id="historyList"></div>
+    <div class="prompt-area">
+      <textarea id="promptInput" placeholder="What do you want to write?&#10;&#10;Examples:&#10;• Write a short story about a robot who discovers emotions&#10;• Explain quantum computing in simple terms&#10;• Write a professional email declining a meeting&#10;• Create a Python function to sort a linked list"></textarea>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="generateBtn" onclick="generate()">
+        <div class="spinner" id="spinner"></div>
+        <span id="btnText">Generate</span>
+      </button>
+      <button class="secondary" onclick="clearAll()">Clear</button>
+      <button class="secondary" onclick="logout()" style="margin-left:auto;">Sign Out</button>
+    </div>
+
+    <div class="error-box" id="errorBox"></div>
+
+    <div class="output-box" id="outputBox">
+      <div id="outputText"></div>
+      <div class="output-meta" id="outputMeta" style="display:none;">
+        <span id="outputStats"></span>
+        <button class="copy-btn" onclick="copyOutput()">📋 Copy</button>
+      </div>
+    </div>
+
+    <div class="history-section" id="historySection" style="display:none;">
+      <h3>Recent Generations</h3>
+      <div id="historyList"></div>
+    </div>
   </div>
 </main>
 
 <script>
 const API_BASE = 'https://gen.pollinations.ai';
-let history = JSON.parse(localStorage.getItem('pt_history') || '[]');
-renderHistory();
+const CLIENT_ID = 'pk_p48Py2V6GvG5IIn2';
+const REDIRECT_URI = location.href.split('#')[0].split('?')[0];
 
+// ── BYOP Auth ──────────────────────────────────────────
+function loginWithPollinations() {
+  const params = new URLSearchParams({
+    redirect_uri: REDIRECT_URI,
+    client_id: CLIENT_ID,
+  });
+  window.location.href = `https://enter.pollinations.ai/authorize?${params}`;
+}
+
+function handleRedirect() {
+  const hash = location.hash;
+  if (!hash || !hash.includes('api_key=')) return false;
+  const params = new URLSearchParams(hash.slice(1));
+  const apiKey = params.get('api_key');
+  const error = params.get('error');
+  if (error) {
+    showError(`Auth failed: ${error}`);
+    return true;
+  }
+  if (apiKey) {
+    localStorage.setItem('pollinations_api_key', apiKey);
+    history.replaceState(null, '', location.pathname);
+    return true;
+  }
+  return false;
+}
+
+function getApiKey() {
+  return localStorage.getItem('pollinations_api_key');
+}
+
+function logout() {
+  localStorage.removeItem('pollinations_api_key');
+  location.reload();
+}
+
+function showApp() {
+  document.getElementById('authPrompt').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'flex';
+  document.getElementById('mainContent').style.flexDirection = 'column';
+  document.getElementById('mainContent').style.gap = '20px';
+  document.getElementById('userInfo').innerHTML = '✅ Authenticated via Pollinations';
+  loadUserInfo();
+}
+
+async function loadUserInfo() {
+  const key = getApiKey();
+  if (!key) return;
+  try {
+    const res = await fetch('https://enter.pollinations.ai/api/device/userinfo', {
+      headers: { 'Authorization': `Bearer ${key}` }
+    });
+    if (res.ok) {
+      const user = await res.json();
+      const name = user.preferred_username || user.name || 'User';
+      document.getElementById('userInfo').innerHTML =
+        `<img src="${user.picture || ''}" alt="" onerror="this.style.display='none'"/> ${name}`;
+    }
+  } catch(e) {}
+}
+
+// ── Init ───────────────────────────────────────────────
+handleRedirect();
+if (getApiKey()) {
+  showApp();
+}
+
+// ── History ────────────────────────────────────────────
+let history_ = JSON.parse(localStorage.getItem('pt_history') || '[]');
+if (getApiKey()) renderHistory();
+
+// ── UI helpers ─────────────────────────────────────────
 function setLoading(loading) {
-  const btn = document.getElementById('generateBtn');
-  const spinner = document.getElementById('spinner');
-  const btnText = document.getElementById('btnText');
-  btn.disabled = loading;
-  spinner.style.display = loading ? 'block' : 'none';
-  btnText.textContent = loading ? 'Generating...' : 'Generate';
+  document.getElementById('generateBtn').disabled = loading;
+  document.getElementById('spinner').style.display = loading ? 'block' : 'none';
+  document.getElementById('btnText').textContent = loading ? 'Generating...' : 'Generate';
 }
 
 function showError(msg) {
@@ -344,28 +464,27 @@ function hideError() {
   document.getElementById('errorBox').classList.remove('visible');
 }
 
-function showOutput(text, model, tokens) {
-  const box = document.getElementById('outputBox');
-  const outText = document.getElementById('outputText');
-  const meta = document.getElementById('outputMeta');
-  const stats = document.getElementById('outputStats');
-  outText.textContent = text;
-  box.classList.add('visible');
-  meta.style.display = 'flex';
+function showOutput(text, model) {
+  document.getElementById('outputText').textContent = text;
+  document.getElementById('outputBox').classList.add('visible');
+  document.getElementById('outputMeta').style.display = 'flex';
   const words = text.split(/\s+/).length;
-  stats.textContent = `${model} • ${words} words • ${text.length} chars`;
+  document.getElementById('outputStats').textContent = `${model} • ${words} words • ${text.length} chars`;
 }
 
+// ── Generate ───────────────────────────────────────────
 async function generate() {
   const prompt = document.getElementById('promptInput').value.trim();
   if (!prompt) { showError('Please enter a prompt.'); return; }
+
+  const apiKey = getApiKey();
+  if (!apiKey) { showError('Please sign in first.'); return; }
 
   hideError();
   setLoading(true);
 
   const model = document.getElementById('modelSelect').value;
   const systemPrompt = document.getElementById('systemPrompt').value.trim();
-
   const messages = [];
   if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
   messages.push({ role: 'user', content: prompt });
@@ -373,12 +492,16 @@ async function generate() {
   try {
     const res = await fetch(`${API_BASE}/v1/chat/completions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
       body: JSON.stringify({ model, messages, stream: false })
     });
 
     if (!res.ok) {
       const err = await res.text();
+      if (res.status === 401) { logout(); throw new Error('Session expired. Please sign in again.'); }
       throw new Error(`API error ${res.status}: ${err}`);
     }
 
@@ -386,10 +509,10 @@ async function generate() {
     const content = data.choices?.[0]?.message?.content;
     if (!content) throw new Error('No content in response');
 
-    showOutput(content, model, data.usage);
+    showOutput(content, model);
     saveHistory(prompt, content, model);
   } catch (e) {
-    showError(e.message || 'Something went wrong. Please try again.');
+    showError(e.message || 'Something went wrong.');
   } finally {
     setLoading(false);
   }
@@ -415,18 +538,18 @@ function copyOutput() {
 }
 
 function saveHistory(prompt, response, model) {
-  history.unshift({ prompt, response: response.substring(0, 200), model, time: Date.now() });
-  if (history.length > 10) history = history.slice(0, 10);
-  localStorage.setItem('pt_history', JSON.stringify(history));
+  history_.unshift({ prompt, response: response.substring(0, 200), model, time: Date.now() });
+  if (history_.length > 10) history_ = history_.slice(0, 10);
+  localStorage.setItem('pt_history', JSON.stringify(history_));
   renderHistory();
 }
 
 function renderHistory() {
   const section = document.getElementById('historySection');
   const list = document.getElementById('historyList');
-  if (history.length === 0) { section.style.display = 'none'; return; }
+  if (!history_.length) { section.style.display = 'none'; return; }
   section.style.display = 'block';
-  list.innerHTML = history.map((h, i) => `
+  list.innerHTML = history_.map((h, i) => `
     <div class="history-item" onclick="loadHistory(${i})">
       <div class="prompt">${escHtml(h.prompt)}</div>
       <div class="response-preview">${escHtml(h.response)}…</div>
@@ -436,12 +559,12 @@ function renderHistory() {
 }
 
 function loadHistory(i) {
-  document.getElementById('promptInput').value = history[i].prompt;
-  document.getElementById('modelSelect').value = history[i].model;
-  document.getElementById('outputText').textContent = history[i].response;
+  document.getElementById('promptInput').value = history_[i].prompt;
+  document.getElementById('modelSelect').value = history_[i].model;
+  document.getElementById('outputText').textContent = history_[i].response;
   document.getElementById('outputBox').classList.add('visible');
   document.getElementById('outputMeta').style.display = 'flex';
-  document.getElementById('outputStats').textContent = history[i].model;
+  document.getElementById('outputStats').textContent = history_[i].model;
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -457,9 +580,8 @@ function timeAgo(ts) {
   return `${Math.floor(d/86400)}d ago`;
 }
 
-// Ctrl+Enter to generate
-document.getElementById('promptInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { generate(); }
+document.getElementById('promptInput')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) generate();
 });
 </script>
 
